@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compliance Monitor Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+        }
+        
+        .gradient-border {
+            position: relative;
+            border-radius: 0.75rem;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border-radius: 0.75rem;
+            padding: 1px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        .hover-lift {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .disabled\:opacity-50:disabled {
+            opacity: 0.5;
+        }
+        
+        .disabled\:cursor-not-allowed:disabled {
+            cursor: not-allowed;
+        }
+
+        nav {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-100">
+    <!-- Header with Logo -->
+    <nav class="bg-slate-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <!-- Logo SVG -->
+                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                        ComplianceGuard
+                    </span>
+                </div>
+                <div class="text-sm text-gray-400">
+                    {{ timestamp }}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- File Upload Section -->
+        <div class="card gradient-border p-8 mb-8 hover-lift">
+            <form method="post" action="/upload" enctype="multipart/form-data">
+                <div class="flex flex-col items-center space-y-6">
+                    <div class="w-full max-w-md">
+                        <div class="relative">
+                            <label for="file-upload" 
+                                   class="flex flex-col items-center p-6 border-2 border-dashed border-slate-600 rounded-lg hover:border-blue-500 cursor-pointer transition-colors">
+                                <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <span class="mt-4 text-sm text-slate-400" id="file-label">Drop your document here or click to browse</span>
+                                <input type="file" 
+                                       id="file-upload" 
+                                       name="file" 
+                                       class="hidden" 
+                                       accept=".pdf,.txt" 
+                                       required>
+                            </label>
+                        </div>
+                        <p class="mt-2 text-xs text-center text-slate-500">Supported formats: PDF, TXT</p>
+                        <p class="mt-2 text-sm text-center text-slate-400" id="selected-file"></p>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <button type="submit" 
+                            class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg 
+                                   hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 
+                                   focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900
+                                   transition-all duration-200 ease-in-out transform hover:scale-105">
+                        Generate Compliance Report
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if result %}
+        <!-- Results Section -->
+        <div class="space-y-8">
+            <!-- Compliance Score -->
+            <div class="card gradient-border p-8 hover-lift">
+                <h2 class="text-xl font-semibold text-white mb-6">Overall Compliance Score</h2>
+                <div class="relative h-64 flex items-center justify-center">
+                    <canvas id="complianceChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="scoreDisplay" class="text-4xl font-bold"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Regulation Summary -->
+            <div class="card gradient-border p-8 hover-lift">
+                <h2 class="text-xl font-semibold text-white mb-6">Regulation Summary</h2>
+                <div class="space-y-4" id="regulationSummary"></div>
+            </div>
+
+            <!-- Violations -->
+            <div class="card gradient-border p-8 hover-lift">
+                <h2 class="text-xl font-semibold text-white mb-6">Detected Violations</h2>
+                <div class="space-y-4" id="violationsSection"></div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="card gradient-border p-8 hover-lift">
+                <h2 class="text-xl font-semibold text-white mb-6">Recommendations</h2>
+                <div class="space-y-4" id="recommendationsSection"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="mt-4 card gradient-border p-6 border-l-4 border-red-500">
+            <p class="text-red-400">{{ error }}</p>
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        // Update chart colors for dark theme
+        Chart.defaults.color = '#94a3b8';
+        
+        function formatResults(text) {
+            // Extract compliance score from the analysis
+            const scoreMatch = text.match(/Score:\s*(\d+)/);
+            const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+            
+            // Create the compliance score chart
+            const ctx = document.getElementById('complianceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [score, 100 - score],
+                        backgroundColor: [
+                            score >= 70 ? '#4CAF50' : score >= 40 ? '#FFA726' : '#EF5350',
+                            '#1e293b'
+                        ],
+                        borderWidth: 0,
+                        cutout: '80%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+
+            // Update score display
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            scoreDisplay.textContent = `${score}%`;
+            scoreDisplay.className = `text-4xl font-bold ${
+                score >= 70 ? 'text-green-500' : 
+                score >= 40 ? 'text-orange-500' : 
+                'text-red-500'
+            }`;
+
+            // Helper function to check if a section has content
+            function hasContent(text) {
+                return text && text.trim().length > 0 && !text.includes('undefined');
+            }
+
+            // Format Regulation Summary
+            const regulationSection = document.getElementById('regulationSummary');
+            regulationSection.innerHTML = '';
+            const regulations = text.match(/\d\.\s+[^:]+:[\s\S]*?(?=\d\.\s+|$)/g) || [];
+            
+            regulations.forEach(regulation => {
+                const [title, ...points] = regulation.split('\n').filter(Boolean);
+                const bulletPoints = points.filter(point => point.trim().startsWith('•'));
+                
+                if (bulletPoints.length > 0) {  // Only create card if there are bullet points
+                    const div = document.createElement('div');
+                    div.className = 'mb-6 bg-slate-800 rounded-lg p-6';
+                    
+                    div.innerHTML = `
+                        <h3 class="text-lg font-medium text-slate-200 mb-4">${title.trim()}</h3>
+                        <ul class="list-disc space-y-2">
+                            ${bulletPoints.map(point => 
+                                `<li class="ml-6 text-slate-400">${point.trim().substring(1).trim()}</li>`
+                            ).join('')}
+                        </ul>
+                    `;
+                    regulationSection.appendChild(div);
+                }
+            });
+
+            // Format Violations
+            const violationsSection = document.getElementById('violationsSection');
+            violationsSection.innerHTML = '';
+            const violations = text.match(/Severity:[\s\S]*?(?=(?:Severity:|RECOMMENDATIONS:|$))/g) || [];
+            
+            violations.forEach(violation => {
+                const severity = violation.match(/Severity:\s*(High|Medium|Low)/)?.[1];
+                const title = violation.match(/Title:\s*([^\n]+)/)?.[1];
+                const keyIssues = violation.match(/Key Issues:([\s\S]*?)(?=Impact:|$)/)?.[1];
+                const impact = violation.match(/Impact:([\s\S]*?)(?=Remediation|$)/)?.[1];
+                const remediation = violation.match(/Remediation Steps:([\s\S]*?)(?=(?:Severity:|$))/)?.[1];
+
+                if (severity && title && (keyIssues || impact || remediation)) {  // Only create card if essential info exists
+                    const card = document.createElement('div');
+                    card.className = 'mb-6 bg-slate-800 rounded-lg p-6';
+                    
+                    const formatBulletPoints = (text) => {
+                        if (!text) return '';
+                        const points = text.split('\n')
+                            .filter(line => line.trim().startsWith('•'))
+                            .map(line => `<li class="ml-6 text-slate-400">${line.trim().substring(1).trim()}</li>`)
+                            .join('');
+                        return points ? `<ul class="list-disc space-y-2">${points}</ul>` : '';
+                    };
+
+                    const severityClass = 
+                        severity === 'High' ? 'bg-red-900 text-red-200' :
+                        severity === 'Medium' ? 'bg-yellow-900 text-yellow-200' :
+                        'bg-blue-900 text-blue-200';
+
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="px-3 py-1 rounded-full text-sm ${severityClass}">
+                                ${severity}
+                            </span>
+                            <h4 class="text-lg font-medium text-slate-200">${title}</h4>
+                        </div>
+                        ${keyIssues ? `
+                            <div class="mb-4">
+                                <h5 class="text-slate-300 mb-2">Key Issues:</h5>
+                                ${formatBulletPoints(keyIssues)}
+                            </div>
+                        ` : ''}
+                        ${impact ? `
+                            <div class="mb-4">
+                                <h5 class="text-slate-300 mb-2">Impact:</h5>
+                                ${formatBulletPoints(impact)}
+                            </div>
+                        ` : ''}
+                        ${remediation ? `
+                            <div>
+                                <h5 class="text-slate-300 mb-2">Remediation Steps:</h5>
+                                ${formatBulletPoints(remediation)}
+                            </div>
+                        ` : ''}
+                    `;
+                    violationsSection.appendChild(card);
+                }
+            });
+
+            // Format Recommendations
+            const recommendationsSection = document.getElementById('recommendationsSection');
+            recommendationsSection.innerHTML = '';
+            const recommendations = text.match(/Priority:[\s\S]*?(?=(?:Priority:|$))/g) || [];
+            
+            recommendations.forEach(rec => {
+                const priority = rec.match(/Priority:\s*(High|Medium|Low)/)?.[1];
+                const title = rec.match(/Title:\s*([^\n]+)/)?.[1];
+                const objective = rec.match(/Objective:([\s\S]*?)(?=Implementation|$)/)?.[1];
+                const steps = rec.match(/Implementation Steps:([\s\S]*?)(?=Timeline|$)/)?.[1];
+                const timeline = rec.match(/Timeline:\s*([^\n]+)/)?.[1];
+                const outcomes = rec.match(/Expected Outcomes:([\s\S]*?)(?=(?:Priority:|$))/)?.[1];
+
+                if (priority && title && (objective || steps || outcomes)) {  // Only create card if essential info exists
+                    const card = document.createElement('div');
+                    card.className = 'mb-6 bg-slate-800 rounded-lg p-6';
+                    
+                    const formatBulletPoints = (text) => {
+                        if (!text) return '';
+                        const points = text.split('\n')
+                            .filter(line => line.trim().startsWith('•'))
+                            .map(line => `<li class="ml-6 text-slate-400">${line.trim().substring(1).trim()}</li>`)
+                            .join('');
+                        return points ? `<ul class="list-disc space-y-2">${points}</ul>` : '';
+                    };
+
+                    const priorityClass = 
+                        priority === 'High' ? 'bg-red-900 text-red-200' :
+                        priority === 'Medium' ? 'bg-yellow-900 text-yellow-200' :
+                        'bg-blue-900 text-blue-200';
+
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="px-3 py-1 rounded-full text-sm ${priorityClass}">
+                                Priority: ${priority}
+                            </span>
+                            <h4 class="text-lg font-medium text-slate-200">${title}</h4>
+                        </div>
+                        ${objective ? `
+                            <div class="mb-4">
+                                <h5 class="text-slate-300 mb-2">Objective:</h5>
+                                ${formatBulletPoints(objective)}
+                            </div>
+                        ` : ''}
+                        ${steps ? `
+                            <div class="mb-4">
+                                <h5 class="text-slate-300 mb-2">Implementation Steps:</h5>
+                                ${formatBulletPoints(steps)}
+                            </div>
+                        ` : ''}
+                        ${timeline ? `
+                            <div class="mb-4">
+                                <h5 class="text-slate-300 mb-2">Timeline:</h5>
+                                <p class="text-slate-400">${timeline}</p>
+                            </div>
+                        ` : ''}
+                        ${outcomes ? `
+                            <div>
+                                <h5 class="text-slate-300 mb-2">Expected Outcomes:</h5>
+                                ${formatBulletPoints(outcomes)}
+                            </div>
+                        ` : ''}
+                    `;
+                    recommendationsSection.appendChild(card);
+                }
+            });
+        }
+
+        // Initialize if results exist
+        {% if result %}
+        const resultText = `{{ result|safe }}`;
+        formatResults(resultText);
+        {% endif %}
+
+        // Simple file selection handler
+        const fileInput = document.getElementById('file-upload');
+        const fileLabel = document.getElementById('file-label');
+        const selectedFile = document.getElementById('selected-file');
+
+        fileInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                selectedFile.textContent = `Selected file: ${file.name}`;
+                fileLabel.textContent = 'Change file';
+            } else {
+                selectedFile.textContent = '';
+                fileLabel.textContent = 'Drop your document here or click to browse';
+            }
+        });
+    </script>
+</body>
+</html> 
