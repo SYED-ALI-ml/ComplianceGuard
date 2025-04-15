@@ -3,7 +3,7 @@ import os
 
 def main():
     # Get API key from environment variable for security
-    api_key = 'AIzaSyAUNX0gJyu0aP6bSWf1zwYjJ7KeGtHJX2w'
+    api_key = 'AIzaSyAj0s1fY8f2yFzmarSTl-xasE4tgiwb-Y8'
     
     if not api_key:
         print("Please set the GEMINI_API_KEY environment variable")
