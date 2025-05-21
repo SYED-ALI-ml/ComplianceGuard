@@ -77,5 +77,5 @@ For major changes, please open an issue first to discuss what you'd like to chan
 
 **Syed Ali**  
 [GitHub](https://github.com/SYED-ALI-ml)  
-[LinkedIn](https://www.linkedin.com/in/syed-mohammad-ali-jafri-2855ab215/) *(Add your LinkedIn here if you want)*
+[LinkedIn](https://www.linkedin.com/in/syed-mohammad-ali-jafri-2855ab215/)
 
