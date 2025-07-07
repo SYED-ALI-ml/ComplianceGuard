@@ -134,7 +134,7 @@ def upload_file():
             
             try:
                 file.save(filepath)
-                api_key = 'AIzaSyAUNX0gJyu0aP6bSWf1zwYjJ7KeGtHJX2w'
+                api_key = os.environ.get('GEMINI_API_KEY')
                 monitor = ComplianceMonitor(api_key)
                 result = monitor.generate_compliance_report(filepath)
                 
@@ -160,6 +160,7 @@ def upload_file():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port) 
+    
 from flask import Flask, render_template, request, flash
 import os
 from compliance_monitor import ComplianceMonitor
@@ -296,7 +297,7 @@ def upload_file():
             
             try:
                 file.save(filepath)
-                api_key = 'AIzaSyAUNX0gJyu0aP6bSWf1zwYjJ7KeGtHJX2w'
+                api_key = os.environ.get('GEMINI_API_KEY')
                 monitor = ComplianceMonitor(api_key)
                 result = monitor.generate_compliance_report(filepath)
                 
